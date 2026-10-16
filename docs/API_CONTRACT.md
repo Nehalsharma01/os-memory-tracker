@@ -115,3 +115,25 @@ External fragmentation:
 (1 - largest_free_block / total_free_memory) * 100
 
 If total_free_memory is zero, report 0% by documented convention.
+## Process Monitoring
+
+### GET /api/processes
+
+Returns accessible Linux processes, sorted by resident memory
+in descending order.
+
+Each process contains:
+- `pid`: Process ID
+- `name`: Process name
+- `memory_rss_kb`: Resident memory in KiB
+- `memory_virtual_kb`: Virtual memory in KiB
+- `minor_faults_total`: Cumulative minor page faults
+- `major_faults_total`: Cumulative major page faults
+
+Response also includes `timestamp`, `source`, and `count`.
+
+### GET /api/processes/{pid}
+
+Returns monitoring statistics for one process.
+
+Returns HTTP 404 if the process cannot be found or accessed.
