@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-
+from backend.monitoring.processes import get_processes, get_process_by_pid
 from flask import Flask, jsonify
 
 from backend.monitoring.memory import get_memory_stats
@@ -40,6 +40,18 @@ def system_memory():
 def system_page_faults():
     return jsonify(page_fault_monitor.sample())
 
+@app.route("/api/processes", methods=["GET"])
+def list_processes():
+    return jsonify(get_processes())
 
+
+@app.route("/api/processes/<int:pid>", methods=["GET"])
+def process_details(pid):
+    process = get_process_by_pid(pid)
+
+    if process is None:
+        return jsonify({"error": "Process not found"}), 404
+
+    return jsonify(process)
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=5000, debug=False)
