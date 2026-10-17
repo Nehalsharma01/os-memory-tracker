@@ -6,13 +6,13 @@ from backend.monitoring.memory import get_memory_stats
 from backend.monitoring.page_faults import PageFaultMonitor
 from backend.monitoring.processes import get_processes, get_process_by_pid
 from backend.monitoring.process_fault_rates import ProcessFaultRateMonitor
-
+from backend.monitoring.advisor import MemoryPressureAdvisor
 
 app = Flask(__name__)
 
 page_fault_monitor = PageFaultMonitor()
 process_fault_monitor = ProcessFaultRateMonitor()
-
+memory_advisor = MemoryPressureAdvisor()
 
 @app.route("/api/health", methods=["GET"])
 def health():
@@ -58,7 +58,9 @@ def process_details(pid):
         return jsonify({"error": "Process not found"}), 404
 
     return jsonify(process)
-
+@app.route("/api/system/memory-advisor", methods=["GET"])
+def memory_advisor_status():
+    return jsonify(memory_advisor.evaluate())
 
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=5000, debug=False)
