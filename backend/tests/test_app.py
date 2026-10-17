@@ -71,3 +71,102 @@ def test_nonexistent_process_returns_404():
 
     assert response.status_code == 404
     assert response.json["error"] == "Process not found"
+
+def test_simulator_status_endpoint():
+    from backend.app import app, simulator
+
+    simulator.__init__(1000)
+    client = app.test_client()
+
+    response = client.get("/api/simulator/status")
+
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["total_memory"] == 1000
+    assert data["total_free_memory"] == 1000
+
+
+def test_simulator_allocate_endpoint():
+    from backend.app import app, simulator
+
+    simulator.__init__(1000)
+    client = app.test_client()
+
+    response = client.post(
+        "/api/simulator/allocate",
+        json={"pid": 1, "size": 200, "algorithm": "first_fit"},
+    )
+
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["allocated"] is True
+    assert data["metrics"]["total_free_memory"] == 800
+
+
+def test_simulator_deallocate_endpoint():
+    from backend.app import app, simulator
+
+    simulator.__init__(1000)
+    client = app.test_client()
+
+    client.post(
+        "/api/simulator/allocate",
+        json={"pid": 1, "size": 200},
+    )
+
+    response = client.post(
+        "/api/simulator/deallocate",
+        json={"pid": 1},
+    )
+
+    assert response.status_code == 200
+    assert response.get_json()["metrics"]["total_free_memory"] == 1000
+
+
+def test_simulator_reset_endpoint():
+    from backend.app import app
+
+    client = app.test_client()
+
+    client.post(
+        "/api/simulator/allocate",
+        json={"pid": 1, "size": 200},
+    )
+
+    response = client.post("/api/simulator/reset")
+
+    assert response.status_code == 200
+    assert response.get_json()["metrics"]["total_free_memory"] == 1000
+
+
+def test_simulator_rejects_invalid_allocation():
+    from backend.app import app
+
+    client = app.test_client()
+
+    response = client.post(
+        "/api/simulator/allocate",
+        json={"pid": -1, "size": 200},
+    )
+
+    assert response.status_code == 400
+
+
+def test_simulator_returns_conflict_when_memory_is_insufficient():
+    from backend.app import app
+
+    client = app.test_client()
+    client.post("/api/simulator/reset")
+
+    client.post(
+        "/api/simulator/allocate",
+        json={"pid": 1, "size": 900},
+    )
+
+    response = client.post(
+        "/api/simulator/allocate",
+        json={"pid": 2, "size": 200},
+    )
+
+    assert response.status_code == 409
+    assert response.get_json()["allocated"] is False
