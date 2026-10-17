@@ -1,15 +1,17 @@
 from datetime import datetime, timezone
-from backend.monitoring.processes import get_processes, get_process_by_pid
+
 from flask import Flask, jsonify
 
 from backend.monitoring.memory import get_memory_stats
 from backend.monitoring.page_faults import PageFaultMonitor
+from backend.monitoring.processes import get_processes, get_process_by_pid
+from backend.monitoring.process_fault_rates import ProcessFaultRateMonitor
 
 
 app = Flask(__name__)
 
-# Keep one monitor so rates can be calculated across API requests.
 page_fault_monitor = PageFaultMonitor()
+process_fault_monitor = ProcessFaultRateMonitor()
 
 
 @app.route("/api/health", methods=["GET"])
@@ -40,9 +42,12 @@ def system_memory():
 def system_page_faults():
     return jsonify(page_fault_monitor.sample())
 
+
 @app.route("/api/processes", methods=["GET"])
 def list_processes():
-    return jsonify(get_processes())
+    data = get_processes()
+    data["processes"] = process_fault_monitor.sample(data["processes"])
+    return jsonify(data)
 
 
 @app.route("/api/processes/<int:pid>", methods=["GET"])
@@ -53,5 +58,7 @@ def process_details(pid):
         return jsonify({"error": "Process not found"}), 404
 
     return jsonify(process)
+
+
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=5000, debug=False)
