@@ -137,3 +137,20 @@ Response also includes `timestamp`, `source`, and `count`.
 Returns monitoring statistics for one process.
 
 Returns HTTP 404 if the process cannot be found or accessed.
+
+## Per-Process Page-Fault Rates
+
+The `GET /api/processes` endpoint returns these cumulative counters and rate fields for each process:
+
+- `minor_faults_total`: Cumulative minor page faults.
+- `major_faults_total`: Cumulative major page faults.
+- `minor_faults_per_second`: Minor page-fault rate per second.
+- `major_faults_per_second`: Major page-fault rate per second.
+- `memory_rss_kb`: Resident memory in KiB.
+- `memory_virtual_kb`: Virtual memory in KiB.
+
+Rates are calculated from counter differences divided by elapsed time. Rates are `null` on the first sample and when a valid rate cannot be calculated, such as when counters decrease.
+
+The `GET /api/processes/{pid}` endpoint currently returns cumulative counters and memory statistics, but not rate fields.
+
+These measurements describe the Linux environment visible to the application. In WSL, they do not automatically represent all Windows processes or host memory.
